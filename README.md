@@ -612,10 +612,6 @@ Example response:
 
 2. FastAPI Docs, open https:///docs/ or local test http://127.0.0.1:8080/docs/
 
-## Example Notebook for FastAPI function connect to GoogleVertexAISearchRetriever
-
-https://colab.research.google.com/drive/1NCu5DYalnS0Vcw4MAZaKbzNB8UldcogF?usp=sharing
-
 ## Example Open API Spec to use with Agent Builder
 
 You need to edit:
