@@ -1,0 +1,36 @@
+steps:
+  # Docker Build
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 
+          'us-central1-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${REPO_NAME}:${SHORT_SHA}', '.']
+
+  # Docker push to Google Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push',  'us-central1-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${REPO_NAME}:${SHORT_SHA}']
+
+  # Deploy to Cloud Run
+  - name: google/cloud-sdk
+    args:
+      - 'gcloud'
+      - 'run'
+      - 'deploy'
+      - '${REPO_NAME}'
+      - '--image=us-central1-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${REPO_NAME}:${SHORT_SHA}'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--cpu=${_CPU}'
+      - '--memory=${_MEMORY}'
+      - '--concurrency=${_CONCURRENCY}'
+      - '--timeout=${_TIMEOUT}'
+      - '--min-instances=${_MIN_INSTANCES}'
+      - '--max-instances=${_MAX_INSTANCES}'
+      - '--set-env-vars'
+      - 'API_ENV=production,VERTEXAI_PROJECT_ID=${_PROJECT_ID},PROJECT_ID=${_PROJECT_ID}'
+      - '--service-account=${_SERVICE_ACCOUNT}'
+      - '--session-affinity'
+      - '--allow-unauthenticated'
+      - '--execution-environment=gen2'
+      - '--update-secrets=LINE_CHANNEL_ACCESS_TOKEN=line-bot-access-token:latest,INE_CHANNEL_SECRET=line-bot-secret:latest'
+
+images:
+ - 'us-central1-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${REPO_NAME}:${SHORT_SHA}'
