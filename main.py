@@ -1,18 +1,20 @@
 import os
 import json
+import uvicorn
+
+from fastapi import FastAPI
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+
 import vertexai
+
+from langchain_community.retrievers import (
+    GoogleVertexAISearchRetriever,
+)
 
 if os.getenv('API_ENV') != 'production':
     from dotenv import load_dotenv
     load_dotenv()
-
-import uvicorn
-
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-from typing import Optional
 
 project_id = os.environ.get('PROJECT_ID', 'nuttee-lab-00')
 location = os.environ.get('LOCATION', 'us-central1')
@@ -23,12 +25,6 @@ max_documents = os.environ.get('MAX_DOCUMENTS', '5')
 engine_data_type = os.environ.get('ENGINE_DATA_TYPE', '1')
 
 vertexai.init(project=project_id, location=location)
-
-from langchain_community.retrievers import (
-    GoogleVertexAIMultiTurnSearchRetriever,
-    GoogleVertexAISearchRetriever,
-)
-from langchain.schema import Document
 
 # Init Google Vertex AI Search Retriever
 # https://python.langchain.com/docs/integrations/retrievers/google_vertex_ai_search/
@@ -41,9 +37,7 @@ retriever = GoogleVertexAISearchRetriever(
     engine_data_type = engine_data_type,
 )
 
-# Test Retriever
-#print(retriever.get_relevant_documents("what is google cloud revenue?"))
-
+# Initialize FastAPI
 app = FastAPI()
 app.project_id = project_id
 app.location = location
@@ -57,32 +51,29 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
 async def root():
+    """
+    Returns a simple welcome message.
+
+    Returns:
+        dict: A dictionary containing a "message" key with the value "Hello World!".
+    """
     return {"message": "Hello World!"}
 
-# {
-# \"description\": \"This bed is perfect for any bedroom. It's made of solid wood and has a beautiful finish. The bed comes with a mattress and box spring. The picture on the wall is a beautiful landscape. The bedroom is spacious and has a lot of natural light.\", 
-# \"id\": \"119\", 
-# \"categories\": \"Bed\", 
-# \"availableTime\": \"2023-08-26 23:00:17 UTC\", 
-# \"images\": 
-#   [{
-#       \"height\": \"1024\", 
-#       \"uri\": \"https://storage.googleapis.com/csm-dataset/products_images_dataset/dataset/Bed/6/img8.png\", 
-#       \"width\": \"1024\"
-#   }], 
-# \"language_code\": \"en\", 
-# \"priceInfo\": {
-#   \"originalPrice\": 239.6, 
-#   \"cost\": 47.92, 
-#   \"currencyCode\": \"USD\", 
-#   \"price\": 239.6
-#   }, 
-# \"title\": \"Bed in a bedrooen\",,
-# \"availableQuantity\": \"57\"
-# }",
-# "metadata":{"id":"190477da2212792a8023d4b977c84770","name":"projects/389071638346/locations/global/collections/default_collection/dataStores/products-ds_1717761505389/branches/0/documents/190477da2212792a8023d4b977c84770"},"type":"Document"}
-
 class Product(BaseModel):
+    """
+    Represents a product object returned from the Google Vertex AI Search engine.
+
+    Attributes:
+        id (int): The unique identifier of the product.
+        categories (str): The category of the product.
+        availableTime (str): The time when the product became available.
+        image_uri (str): The URI of the product image.
+        language_code (str): The language code of the product description.
+        price (float): The price of the product.
+        currency_code (str): The currency code of the product price.
+        title (str): The title of the product.
+        availableQuantity (int): The number of units of the product available.
+    """
     id: int
     categories: str
     availableTime: str
@@ -108,7 +99,6 @@ async def data_store_search(query: str) -> list[Product]:
 
     items = []
     result = retriever.get_relevant_documents(query)
-    
     for doc in result:
         row = json.loads(doc.page_content)
         items.append(
@@ -155,7 +145,7 @@ async def data_store_search_with_filters(query: str, filters: str) -> list[Produ
         filter=filters,
     )
     result = retriever_with_filters.get_relevant_documents(query)
-    
+
     for doc in result:
         row = json.loads(doc.page_content)
         items.append(
