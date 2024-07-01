@@ -542,7 +542,7 @@ Deploy to Cloud Run by using current directory as source to build.
 Then the built container will deploy to Cloud Run with Required Environment Variables, and attached Service Account created at the beginning.
 
 ```bash {"id":"01J1HSJRA7J0D6P6QC6QYZ0VG3"}
-gcloud run deploy fast-api-search-products \
+gcloud run deploy $CLOUDRUN_INSTANCE_NAME \
   --source . \
   --project $PROJECT_ID \
   --region $LOCATION \
@@ -554,7 +554,7 @@ gcloud run deploy fast-api-search-products \
 Get Cloud Run Service URL
 
 ```bash {"id":"01J1HX9DG25ABJ6ENZ76Y2V7J7","name":"CLOUDRUN_URL"}
-gcloud run services describe fast-api-search-products --platform managed --region $LOCATION --format 'value(status.url)' | tr -d '\n'
+gcloud run services describe $CLOUDRUN_INSTANCE_NAME --platform managed --region $LOCATION --format 'value(status.url)' | tr -d '\n'
 
 ```
 
